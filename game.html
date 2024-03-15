@@ -1,0 +1,124 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.152.2/build/three.module.js"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from "three";
+
+      // サイズを指定
+      const width = 960;
+      const height = 540;
+
+      // レンダラーを作成
+      const renderer = new THREE.WebGLRenderer({
+        canvas: document.querySelector("#myCanvas"),
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(width, height);
+
+      // シーンを作成
+      const scene = new THREE.Scene();
+
+      // カメラを作成
+      const camera = new THREE.PerspectiveCamera(45, width / height);
+      camera.position.set(0, -150, 1500);
+
+      // 箱を作成
+
+      const geometry = new THREE.BoxGeometry(400,20,300);
+      const material = new THREE.MeshNormalMaterial();
+      const boxes= new THREE.Mesh(geometry, material);
+    //箱を複数作成
+    for(let i=0;i<=30;i++){
+        const boxes= new THREE.Mesh(geometry, material);
+        boxes.position.set(0, 200+70*i, 0);
+        scene.add(boxes);
+        renderer.render(scene,camera);
+    }
+
+    
+      //ボックスをスタート位置に移す関数
+        let moveDirection1 = 4
+
+        function animate1() {
+        requestAnimationFrame(animate1);
+
+
+        // オブジェクトを下に動かす
+        boxes.position.y -= moveDirection1;
+
+        // 下で止まる
+
+        if (boxes.position.y = boxes.position.y-70) {
+            moveDirection1=0
+        }
+
+        renderer.render(scene, camera);
+    }
+
+
+      //横に動く関数
+      let moveDirection2 = 6; // 移動方向を表す変数
+
+      // アニメーションを実行する関数
+      function animate2() {
+      requestAnimationFrame(animate2);
+
+        // オブジェクトを左右に動かす
+      
+          boxes.position.x += moveDirection2;
+        
+
+        // 画面端で反転
+        if (boxes.position.x >= 450 || boxes.position.x <= -450) {
+            moveDirection2 = -moveDirection2;
+        }
+      
+
+        renderer.render(scene, camera);
+    }
+    // 移動方向を表す変数
+    let moveDirection3 = 5; 
+
+    function animate3(s) {
+        requestAnimationFrame(animate3);
+        if (boxes.position.y >= -480+20*s){
+          boxes.position.y -= moveDirection3;
+        }
+       
+        // オブジェクトを下に動かす
+        
+
+        renderer.render(scene, camera);
+        
+    }
+    // アニメーションを実行
+    animate2();
+    for( let k=0;k<=30;k++){
+      document.addEventListener("click",events(),false)
+        function events(){
+          if(boxes.position.y > 200){
+            animate1();
+          }else if(boxes.position.y = 200){
+            animate2();
+          }else{
+            animate3();
+          }
+        }
+      }
+    
+   
+  
+   renderer.render(scene, camera);
+    </script>
+  </head>
+  <body>
+    <canvas id="myCanvas"></canvas>
+  </body>
+</html>
