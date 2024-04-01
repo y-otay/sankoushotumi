@@ -25,15 +25,48 @@ renderer.setSize(width, height);
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(45, width / height);
-camera.position.set(0, -150, 1500);
+camera.position.set(0, -150, 1200);
 
-const geometry = new THREE.BoxGeometry(400, 20, 300);
-const material = new THREE.MeshNormalMaterial();
+const geometry = new THREE.BoxGeometry(200,20,250);
+
+// テクスチャのパスの配列を定義
+const textures = [
+  "image/19qfb31hpnesocsw.jpg",
+  "image/41Cv1TkZ4rL.jpg",
+  "image/41hukSK1BFL._SY445_SX342_.jpg",
+  "image/41JQYfaFSaL._SY445_SX342_.jpg",
+  "image/41m6VUbVICL._SY445_SX342_.jpg",
+  "image/41risuMn0L._SY445_SX342_.jpg",
+  "image/41v113triqL._SY445_SX342_.jpg",
+  "image/41zeltJV2bL._SY445_SX342_.jpg",
+  "image/41Yn5sF1yGS._SY445_SX342_.jpg",
+  "image/51BPHWfKpVL._SY445_SX342_.jpg",
+  "image/51BZNoAp6iL._SL500_.jpg",
+  "image/51VcmFf+4YL._SY445_SX342_.jpg",
+  "image/51pHmv0qPjL._SY445_SX342_.jpg",
+  "image/51ytpgtG4EL._SL500_.jpg",
+  "image/61wJRcSL8pL._SY445_SX342_.jpg",
+  "image/512vTFXAxrL._SY445_SX342_.jpg",
+  "image/611C8NPLQlL._AC_UF1000,1000_QL80_.jpg",
+  "image/512UuB057tL._SY445_SX342_.jpg",
+  "image/5191I62Y1JL._AC_UF1000,1000_QL80_.jpg",
+  "image/034924.jpg",
+  "image/9784053038449.jpg",
+  "image/41ZrFVasdPL._SY445_SX342_.jpg"
+
+
+
+  
+
+];
+
+
+
 const boxes = [];
 let floatingBox = null
 
-let moveDirection2 = 6;
-let moveDirection3 = 6;
+let moveDirection2 = 10;
+let moveDirection3 = 24;
 let score = 0;
 
 function moveboxX() {
@@ -48,6 +81,13 @@ function moveboxY(box) {
 }
 
 function createBox() {
+  // ランダムにテクスチャを選択
+const randomTexturePath = textures[Math.floor(Math.random() * textures.length)];
+
+// テクスチャをロードしてマテリアルを作成
+const texture = new THREE.TextureLoader().load(randomTexturePath);
+const material = new THREE.MeshBasicMaterial({ map: texture });
+
   const box = new THREE.Mesh(geometry, material);
   box.position.set(0, 200, 0);
   scene.add(box);
@@ -90,7 +130,6 @@ document.getElementById('score').innerText = 'Score: ' + score;
 </script>
 </head>
 <body>
-
   <div id ="score"></div>
   <canvas id="myCanvas"></canvas>
 </body>
