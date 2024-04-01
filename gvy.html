@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cannon.js and Three.js Example</title>
+    <script type="module">
+        import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/+esm';
+        import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+
+        // Cannon.js World
+        const world = new CANNON.World();
+        world.broadphase = new CANNON.NaiveBroadphase();
+        world.solver.iterations = 10 ;
+        world.solver.tolerance = 0.1 ;
+        world.gravity.set(0,-9.82,0);
+
+        // サイズを指定
+        const width = 960;
+        const height = 540;
+        // Three.js Scene, Camera, and Renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("#cannonCanvas") });
+        renderer.setSize(width, height);
+        renderer.shadowMap.enabled = true;  // シャドウマップを有効にする
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;  // シャドウの滑らかさを設定
+
+        // Ground
+        const groundGeometry = new THREE.PlaneGeometry(500, 500);
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.receiveShadow = true;  // 地面が影を受け取るようにする
+        scene.add(ground);
+
+        const groundShape = new CANNON.Plane();
+        const groundBody = new CANNON.Body({ mass: 0 });
+        groundBody.addShape(groundShape);
+        groundBody.position.set(0, -0.5, 0); // 地面の位置を下に移動させる
+        world.addBody(groundBody);
+        ground.rotation.x = Math.PI / -2;
+
+        // Sphere
+        const sphereGeometry = new THREE.SphereGeometry(4, 32, 32);
+        const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xffffe0 });
+        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.castShadow = true;  // 球体が影を投影するようにする
+        scene.add(sphere);
+
+        const sphereShape = new CANNON.Sphere(1);
+        const sphereBody = new CANNON.Body({ mass: 5 });
+        sphereBody.addShape(sphereShape);
+        sphereBody.position.set(0, 15, 0);
+        world.addBody(sphereBody);
+
+        //ライト設定
+        function initLight() {   
+            //ライトの取得（色、強度）
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 10, 7);
+            light.castShadow = true;  // ライトが影を投影するようにする
+            light.shadow.mapSize.width = 1024;
+            light.shadow.mapSize.height = 1024;
+            light.shadow.camera.near = 0.5;
+            light.shadow.camera.far = 50;
+            scene.add(light);
+
+            //環境光の取得
+            const amb = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(amb);
+        }
+
+        // Time step and iterations
+        const fixedTimeStep = 1.0 / 60.0;
+        const maxSubSteps = 3;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            world.step(fixedTimeStep, fixedTimeStep, maxSubSteps);
+
+            // Update Three.js objects based on Cannon.js objects
+            sphere.position.copy(sphereBody.position);
+            sphere.quaternion.copy(sphereBody.quaternion);
+
+            camera.position.set(0, 5, -20);
+            camera.lookAt(0, 10, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        initLight();  // こちらでinitLight()を呼び出す
+
+        animate();
+    </script>
+</head>
+<body>
+    <canvas id="cannonCanvas"></canvas>
+</body>
+</html>

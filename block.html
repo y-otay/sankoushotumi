@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Stacking Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // グローバル変数
+        let camera, scene, renderer;
+        let block, ground;
+        let blockSpeed = 0.05;
+        let blocks = [];
+
+        init();
+        animate();
+
+        function init() {
+            // シーンの作成
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+
+            // カメラの作成
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            // レンダラーの作成
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // 地面の作成
+            const groundGeometry = new THREE.PlaneGeometry(10, 10);
+            const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+            ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
+
+            // 初めのブロックの作成
+            createNewBlock();
+            
+            // クリックイベントの追加
+            document.addEventListener('click', onClick, false);
+
+            // リサイズイベントの追加
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            render();
+        }
+
+        function update() {
+            // ブロックの左右移動
+            block.position.x += blockSpeed;
+
+            // ブロックの位置が一定値以上になったら反転
+            if (block.position.x >= 2 || block.position.x <= -2) {
+                blockSpeed *= -1;
+            }
+        }
+
+        function render() {
+            renderer.render(scene, camera);
+        }
+
+        function onClick(event) {
+            // ブロックを地面に落とす
+            block.position.y = -2.5; // 地面のy座標に合わせる
+            createNewBlock(); // 新しいブロックを作成
+        }
+
+        function createNewBlock() {
+            // 新しいブロックの作成
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const newBlock = new THREE.Mesh(geometry, material);
+            
+            if (blocks.length > 0) {
+                // 前のブロックの上に乗せる
+                const lastBlock = blocks[blocks.length - 1];
+                newBlock.position.x = lastBlock.position.x;
+                newBlock.position.y = lastBlock.position.y + 1;
+            }
+            
+            scene.add(newBlock);
+            blocks.push(newBlock); // ブロックを配列に追加
+            block = newBlock; // 現在のブロックを更新
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>

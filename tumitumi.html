@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.152.2/build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+
+import * as THREE from "three";
+
+const width = 960;
+const height = 540;
+
+const renderer = new THREE.WebGLRenderer({
+  canvas: document.querySelector("#myCanvas"),
+});
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(width, height);
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(45, width / height);
+camera.position.set(0, -150, 1500);
+
+const geometry1 = new THREE.BoxGeometry(400, 20, 300);
+const geometry2 = new THREE.BoxGeometry(400, 20, 300);
+const geometry3 = new THREE.BoxGeometry(400, 20, 300);
+const geometry4 = new THREE.BoxGeometry(400, 20, 300);
+const material = new THREE.MeshNormalMaterial();
+const boxes = [];
+
+let moveDirection2 = 6;
+let moveDirection3 = 6;
+let score = 0;
+
+function animate2(box) {
+  box.position.x += moveDirection2;
+  if (box.position.x >= 450 || box.position.x <= -450) {
+    moveDirection2 = -moveDirection2;
+  }
+}
+
+function animate3(box) {
+  box.position.y -= moveDirection3;
+  if (box.position.y <= -480 ) {
+    moveDirection3 = 0;
+  }
+}
+
+function createBox(geometry) {
+  const box = new THREE.Mesh(geometry, material);
+  box.position.set(0, 200, 0);
+  scene.add(box);
+  boxes.push(box);
+}
+
+function handleClick() {
+  moveDirection3 = 6;
+  createBox(geometry1); // 新しいボックスを生成
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  boxes.forEach((box) => {
+    animate2(box);
+    animate3(box);
+  });
+  renderer.render(scene, camera);
+}
+
+// ボックスを生成
+createBox(geometry1);
+createBox(geometry2);
+createBox(geometry3);
+createBox(geometry4);
+
+// クリックでボックスを落とす
+document.addEventListener("click", handleClick);
+
+// アニメーションを開始
+animate();
+
+</script>
+</head>
+<body>
+  <canvas id="myCanvas"></canvas>
+</body>
+</html>
