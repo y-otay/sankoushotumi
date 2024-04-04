@@ -5,31 +5,39 @@
   <script type="importmap">
     {
       "imports": {
-        "three": "https://unpkg.com/three@0.152.2/build/three.module.js"
+        "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
+        "cannon": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/+esm"
       }
     }
   </script>
   <script type="module">
 
 import * as THREE from "three";
+import * as CANNON from "cannon";
 
 const width = 960;
 const height = 540;
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector("#myCanvas"),
+  alpha: true
 });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(width, height);
+
+const world = new CANNON.World();
+world.gravity.set(0, -9.82, 0);
+world.broadphase = new CANNON.NaiveBroadphase(world);
+world.solver.iterations = 10;
+world.solver.tolerance = 0.1;
 
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(45, width / height);
 camera.position.set(0, -150, 1200);
 
-const geometry = new THREE.BoxGeometry(200,20,250);
+const geometry = new THREE.BoxGeometry(200, 20, 250);
 
-// テクスチャのパスの配列を定義
 const textures = [
   "image/19qfb31hpnesocsw.jpg",
   "image/41Cv1TkZ4rL.jpg",
@@ -53,18 +61,9 @@ const textures = [
   "image/034924.jpg",
   "image/9784053038449.jpg",
   "image/41ZrFVasdPL._SY445_SX342_.jpg"
-
-
-
-  
-
 ];
 
-
-
-const boxes = [];
-let floatingBox = null
-
+let floatingBox = null;
 let moveDirection2 = 10;
 let moveDirection3 = 24;
 let score = 0;
@@ -76,57 +75,68 @@ function moveboxX() {
   }
 }
 
-function moveboxY(box) {
+function moveboxY() {
   floatingBox.position.y -= moveDirection3;
 }
 
 function createBox() {
-  // ランダムにテクスチャを選択
-const randomTexturePath = textures[Math.floor(Math.random() * textures.length)];
-
-// テクスチャをロードしてマテリアルを作成
-const texture = new THREE.TextureLoader().load(randomTexturePath);
-const material = new THREE.MeshBasicMaterial({ map: texture });
+  const randomTexturePath = textures[Math.floor(Math.random() * textures.length)];
+  const texture = new THREE.TextureLoader().load(randomTexturePath);
+  const material = new THREE.MeshBasicMaterial({ map: texture });
 
   const box = new THREE.Mesh(geometry, material);
   box.position.set(0, 200, 0);
   scene.add(box);
-  floatingBox = box
+  floatingBox = box;
+
+  
 }
 
 const landedBoxes = [];
+let state = "x";
 
-let state = "x"
+const tableTexture = "image/66193d1aeb0e1a1ab36b2687c79e63f7_t.jpeg";
+const tableMaterial = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load(tableTexture) });
+const tableGeometry = new THREE.BoxGeometry(1800, 80, 1500);
+const table = new THREE.Mesh(tableGeometry,tableMaterial);
+table.position.set(50,-540,0);
+scene.add(table);
+
+
 function animate() {
-requestAnimationFrame(animate);
-if(state=="y"){
-  moveboxY();
-  if(floatingBox.position.y <= -480+20*landedBoxes.length){
-  landedBoxes.push(floatingBox);
-  createBox();
-  state="x"
-  score += 10;  // Update the score
-      document.getElementById('score').innerText = 'Score: ' + score;  // Update the score display
-    
-}
-  }else if(state=="x"){
+  requestAnimationFrame(animate);
+  
+  world.step(1 / 60);
+
+  if (state === "y") {
+    moveboxY();
+    if (floatingBox.position.y <= -480 + 20 * landedBoxes.length) {
+      landedBoxes.push(floatingBox);
+      createBox();
+      state = "x";
+      score += 10;
+      document.getElementById('score').innerText = 'Score: ' + score;
+    }
+  } else if (state === "x") {
     moveboxX();
   }
 
   renderer.render(scene, camera);
 }
 
-// アニメーションを開始
 createBox();
 animate();
-  document.addEventListener("click",()=>
-{
-state = "y"; 
-}
- )
-//スコアを表示
-// スコアを表示
+
+document.addEventListener("click", () => {
+  state = "y"; 
+});
+
 document.getElementById('score').innerText = 'Score: ' + score;
+
+// ブラックボードの画像をシーンの背景に設定
+const bgTexture = new THREE.TextureLoader().load("image/_blackboard_1.png");
+scene.background = bgTexture;
+
 </script>
 </head>
 <body>
