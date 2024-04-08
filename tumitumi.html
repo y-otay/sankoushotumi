@@ -29,7 +29,7 @@ const world = new CANNON.World();
 world.gravity.set(0,-98.2,0);
 world.broadphase = new CANNON.SAPBroadphase(world);
 world.solver.iterations = 20;
-world.solver.tolerance = 0.001;
+world.solver.tolerance = 0.01;
 
 const scene = new THREE.Scene();
 
@@ -37,7 +37,7 @@ const camera = new THREE.PerspectiveCamera(45, width / height);
 camera.position.set(0, -150, 1200);
 
 const textures = [
-  "image/19qfb31hpnesocsw.jpg",
+"image/19qfb31hpnesocsw.jpg",
   "image/41Cv1TkZ4rL.jpg",
   "image/41hukSK1BFL._SY445_SX342_.jpg",
   "image/41JQYfaFSaL._SY445_SX342_.jpg",
@@ -59,7 +59,11 @@ const textures = [
   "image/034924.jpg",
   "image/9784053038449.jpg",
   "image/41ZrFVasdPL._SY445_SX342_.jpg"
-];
+  // ... (same as before)
+
+
+
+]
 
 let floatingBox = null;
 
@@ -67,14 +71,11 @@ let moveDirection2 = 10;
 let score = 0;
 
 function moveboxX() {
-
-  // Three.js????
   floatingBox.userData.physicsBody.position.x += moveDirection2;
   if (floatingBox.userData.physicsBody.position.x >= 450 || floatingBox.userData.physicsBody.position.x <= -450) {
     moveDirection2 = -moveDirection2;
   }
 }
-
 
 function createBox() {
   const randomTexturePath = textures[Math.floor(Math.random() * textures.length)];
@@ -85,26 +86,18 @@ function createBox() {
   const box = new THREE.Mesh(geometry, material);
   box.position.set(0, 200, 0);
   scene.add(box);
-  floatingBox = box;  // three.js
+  floatingBox = box;
 
   const boxMaterial = new CANNON.Material('boxMaterial');
-// ???????
-boxMaterial.restitution = 0.2; 
-boxMaterial.friction = 0.4; 
+  boxMaterial.restitution = 0.02;
+  boxMaterial.friction = 0.6;
   const boxShape = new CANNON.Box(new CANNON.Vec3(100, 10, 125));
-  let boxMass =15;
+  let boxMass =300;
   const boxBody = new CANNON.Body({ mass: boxMass ,material: boxMaterial});
   boxBody.addShape(boxShape);
   boxBody.position.set(0, 200, 0);
-  
-  boxBody.angularVelocity.set(0, 0, 0); 
   world.addBody(boxBody);
-  
-  
-  floatingBox.userData.physicsBody = boxBody;  
-  //cannon.js
-
-  
+  floatingBox.userData.physicsBody = boxBody;
 }
 
 const landedBoxes = [];
@@ -115,79 +108,131 @@ const tableMaterial = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader(
 const tableGeometry = new THREE.BoxGeometry(1800, 80, 1500);
 const table = new THREE.Mesh(tableGeometry,tableMaterial);
 table.position.set(50,-540,0);
-scene.add(table);//three.js
+scene.add(table);
 
 const tableShape = new CANNON.Box(new CANNON.Vec3(900, 40, 750));
 const tableCannonMaterial = new CANNON.Material('boxMaterial');
-// ???????
-tableCannonMaterial.restitution = 0.2; 
-tableCannonMaterial.friction = 0.5; 
+tableCannonMaterial.restitution = 0.2;
+tableCannonMaterial.friction = 0.5;
 let tableMass = 0;
 const tableBody = new CANNON.Body({ mass: tableMass,material:tableCannonMaterial });
 tableBody.addShape(tableShape);
 tableBody.position.set(50, -540, 0);
 world.addBody(tableBody);
 
-let boxBody = null;
+const gameoverTexture = new THREE.TextureLoader().load("image/gameover.png");
+const gameoverMaterial = new THREE.MeshBasicMaterial({ map: gameoverTexture });
+const gameoverGeometry = new THREE.PlaneGeometry(800, 200);
+const gameover = new THREE.Mesh(gameoverGeometry, gameoverMaterial);
+gameover.position.set(0, 0, 0);
 
-tableBody.addEventListener('collide', function(event) {
-  if(landedBoxes.length >= 1 && event.body === floatingBox.userData.physicsBody) {
-    alert('Game Over');
+const retryTexture = new THREE.TextureLoader().load("image/retry.png");
+const retryMaterial = new THREE.MeshBasicMaterial({ map: retryTexture });
+const retryGeometry = new THREE.PlaneGeometry(150, 150);
+const retry = new THREE.Mesh(retryGeometry, retryMaterial);
+retry.position.set(-180, -200, 0);
 
-  }
-});
+const homeTexture = new THREE.TextureLoader().load("image/Home.png");
+const homeMaterial = new THREE.MeshBasicMaterial({ map: homeTexture });
+const homeGeometry = new THREE.PlaneGeometry(150, 150);
+const home = new THREE.Mesh(homeGeometry, homeMaterial);
+home.position.set(180, -200, 0);
+
+let contactTime = 0;
+
 function animate() {
   requestAnimationFrame(animate);
-  const velocity = floatingBox.userData.physicsBody.velocity;
+  world.step(1/60);
 
+  if (floatingBox.userData.physicsBody.position.distanceTo(tableBody.position) < 150) {
+    contactTime += 1/60;
+  } else {
+    contactTime = 0;
+  }
 
-
-  world.step(1 / 60);
-
-  // cannon.js?????????????????????three.js??????????
   if (floatingBox && floatingBox.userData.physicsBody) {
     floatingBox.position.copy(floatingBox.userData.physicsBody.position);
     floatingBox.quaternion.copy(floatingBox.userData.physicsBody.quaternion);
   }
+
   if (state === "x") {
     moveboxX();
-  }else if (state === "y") {
-    if(Math.abs(velocity.x) < 0.1 && Math.abs(velocity.y) < 0.1 && Math.abs(velocity.z) < 0.1){
+  } else if (state === "y") {
+    const velocity = floatingBox.userData.physicsBody.velocity;
+    if (Math.abs(velocity.x) < 0.1 && Math.abs(velocity.y) < 0.1 && Math.abs(velocity.z) < 0.1) {
       landedBoxes.push(floatingBox);
       createBox();
       state = "x";
       score += 10;
       document.getElementById('score').innerText = 'Score: ' + score;
     } else {
-      // ?????
-      floatingBox.userData.physicsBody.applyForce(new CANNON.Vec3(0, -500, 0), floatingBox.userData.physicsBody.position);
-      floatingBox.userData.physicsBody.angularVelocity.set(0, 0, 0);
-
+      floatingBox.userData.physicsBody.applyForce(new CANNON.Vec3(0, -2000, 0), floatingBox.userData.physicsBody.position);
+      if (floatingBox.position.y >= -200) {
+        floatingBox.userData.physicsBody.angularVelocity.set(0, 0, 0);
+      }
     }
-  }  
+  } else if (state === "z" && contactTime >= 2) {
+    state="gameover";
+    console.log("gameover");
+    scene.add(gameover);
+    renderer.render(scene, camera);
+    return;
+  }
 
+  applyGravityToLandedBoxes();
   renderer.render(scene, camera);
 }
+
 function applyGravityToLandedBoxes() {
   landedBoxes.forEach(box => {
-    box.userData.physicsBody.applyForce(new CANNON.Vec3(0, -500, 0), box.userData.physicsBody.position);
+    box.userData.physicsBody.applyForce(new CANNON.Vec3(0, -2000, 0), box.userData.physicsBody.position);
   });
 }
 
 createBox();
 animate();
-applyGravityToLandedBoxes();
+
+home.addEventListener("click", () => {
+  state = "x";
+  createBox();
+  animate();
+});
+
+retry.addEventListener("click", () => {
+  landedBoxes.forEach(box => {
+    world.remove(box.userData.physicsBody);
+    scene.remove(box);
+  });
+  landedBoxes.length = 0;
+  scene.remove(retry);
+  scene.remove(home);
+  scene.remove(gameover);
+
+  score = 0;
+  document.getElementById('score').innerText = 'Score: ' + score;
+
+  createBox();
+  state = "x";
+  animate();
+});
+
 document.addEventListener("click", () => {
-  state = "y"; 
+  state = "y";
+});
+
+const velocity = floatingBox.userData.physicsBody.velocity;
+tableBody.addEventListener('collide', function(event) {
+  if (landedBoxes.length >= 1 && event.body === floatingBox.userData.physicsBody && Math.abs(velocity.x) < 0.1 && Math.abs(velocity.y) < 0.1 && Math.abs(velocity.z) < 0.1) {
+    state = "z";
+  }
 });
 
 document.getElementById('score').innerText = 'Score: ' + score;
 
-// ?????
 const bgTexture = new THREE.TextureLoader().load("image/_blackboard_1.png");
 scene.background = bgTexture;
 
-</script>
+  </script>
 </head>
 <body>
   <div id ="score"></div>
