@@ -26,16 +26,16 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(width, height);
 
 const world = new CANNON.World();
-world.gravity.set(0,-98.2,0);
+world.gravity.set(0,-982,0);
 world.broadphase = new CANNON.SAPBroadphase(world);
-world.solver.iterations = 20;
-world.solver.tolerance = 0.01;
+world.solver.iterations = 50;
+world.solver.tolerance = 0.001;
 
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(45, width / height);
 camera.position.set(0, -150, 1200);
-
+const retryButton = document.getElementById('retryButton');
 const textures = [
 "image/19qfb31hpnesocsw.jpg",
   "image/41Cv1TkZ4rL.jpg",
@@ -65,9 +65,10 @@ const textures = [
 
 ]
 
+
 let floatingBox = null;
 
-let moveDirection2 = 10;
+let moveDirection2 = 15;
 let score = 0;
 
 function moveboxX() {
@@ -77,11 +78,14 @@ function moveboxX() {
   }
 }
 
+
 function createBox() {
+
+
   const randomTexturePath = textures[Math.floor(Math.random() * textures.length)];
   const texture = new THREE.TextureLoader().load(randomTexturePath);
   const material = new THREE.MeshBasicMaterial({ map: texture });
-  const geometry = new THREE.BoxGeometry(200, 20, 250);
+  const geometry = new THREE.BoxGeometry(200, 30, 250);
 
   const box = new THREE.Mesh(geometry, material);
   box.position.set(0, 200, 0);
@@ -89,12 +93,13 @@ function createBox() {
   floatingBox = box;
 
   const boxMaterial = new CANNON.Material('boxMaterial');
-  boxMaterial.restitution = 0.02;
+  boxMaterial.restitution = 0.2;
   boxMaterial.friction = 0.6;
-  const boxShape = new CANNON.Box(new CANNON.Vec3(100, 10, 125));
-  let boxMass =300;
-  const boxBody = new CANNON.Body({ mass: boxMass ,material: boxMaterial});
+  const boxShape = new CANNON.Box(new CANNON.Vec3(100, 15, 125));
+  let boxMass = 300;
+  const boxBody = new CANNON.Body({ mass: boxMass, material: boxMaterial });
   boxBody.addShape(boxShape);
+  boxBody.linearDamping = 0.1;  // Set linear damping to zero
   boxBody.position.set(0, 200, 0);
   world.addBody(boxBody);
   floatingBox.userData.physicsBody = boxBody;
@@ -104,18 +109,18 @@ const landedBoxes = [];
 let state = "x";
 
 const tableTexture = "image/66193d1aeb0e1a1ab36b2687c79e63f7_t.jpeg";
-const tableMaterial = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load(tableTexture) });
+const tableMaterial = new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(tableTexture) });
 const tableGeometry = new THREE.BoxGeometry(1800, 80, 1500);
-const table = new THREE.Mesh(tableGeometry,tableMaterial);
-table.position.set(50,-540,0);
+const table = new THREE.Mesh(tableGeometry, tableMaterial);
+table.position.set(50, -540, 0);
 scene.add(table);
 
-const tableShape = new CANNON.Box(new CANNON.Vec3(900, 40, 750));
+const tableShape = new CANNON.Box(new CANNON.Vec3(900, 50, 750));
 const tableCannonMaterial = new CANNON.Material('boxMaterial');
 tableCannonMaterial.restitution = 0.2;
 tableCannonMaterial.friction = 0.5;
 let tableMass = 0;
-const tableBody = new CANNON.Body({ mass: tableMass,material:tableCannonMaterial });
+const tableBody = new CANNON.Body({ mass: tableMass, material: tableCannonMaterial });
 tableBody.addShape(tableShape);
 tableBody.position.set(50, -540, 0);
 world.addBody(tableBody);
@@ -140,14 +145,28 @@ home.position.set(180, -200, 0);
 
 let contactTime = 0;
 
+retryButton.style.display = "none";
+
 function animate() {
   requestAnimationFrame(animate);
   world.step(1/60);
 
-  if (floatingBox.userData.physicsBody.position.distanceTo(tableBody.position) < 150) {
-    contactTime += 1/60;
-  } else {
-    contactTime = 0;
+  tableBody.addEventListener('collide', function(event) {
+    if (landedBoxes.length >= 1 && event.body === floatingBox.userData.physicsBody) {
+      contactTime += 1/120;
+    } else {
+      contactTime = 0;
+    }
+  });
+
+  if (contactTime >= 2) {
+    state = "gameover";
+    console.log("gameover");
+    scene.add(gameover);
+    retryButton.style.display = "block";
+    renderer.render(scene, camera);
+    return;
+
   }
 
   if (floatingBox && floatingBox.userData.physicsBody) {
@@ -156,8 +175,11 @@ function animate() {
   }
 
   if (state === "x") {
+    floatingBox.userData.physicsBody.mass = 0; 
     moveboxX();
   } else if (state === "y") {
+
+    floatingBox.userData.physicsBody.mass = 300; 
     const velocity = floatingBox.userData.physicsBody.velocity;
     if (Math.abs(velocity.x) < 0.1 && Math.abs(velocity.y) < 0.1 && Math.abs(velocity.z) < 0.1) {
       landedBoxes.push(floatingBox);
@@ -167,18 +189,11 @@ function animate() {
       document.getElementById('score').innerText = 'Score: ' + score;
     } else {
       floatingBox.userData.physicsBody.applyForce(new CANNON.Vec3(0, -2000, 0), floatingBox.userData.physicsBody.position);
-      if (floatingBox.position.y >= -200) {
+      if (floatingBox.position.y >= 0) {
         floatingBox.userData.physicsBody.angularVelocity.set(0, 0, 0);
       }
     }
-  } else if (state === "z" && contactTime >= 2) {
-    state="gameover";
-    console.log("gameover");
-    scene.add(gameover);
-    renderer.render(scene, camera);
-    return;
-  }
-
+  } 
   applyGravityToLandedBoxes();
   renderer.render(scene, camera);
 }
@@ -198,13 +213,14 @@ home.addEventListener("click", () => {
   animate();
 });
 
-retry.addEventListener("click", () => {
+
+retryButton.addEventListener("click", () => {
   landedBoxes.forEach(box => {
     world.remove(box.userData.physicsBody);
     scene.remove(box);
   });
   landedBoxes.length = 0;
-  scene.remove(retry);
+  retryButton.style.display = "none";
   scene.remove(home);
   scene.remove(gameover);
 
@@ -217,13 +233,8 @@ retry.addEventListener("click", () => {
 });
 
 document.addEventListener("click", () => {
+if(state === "x" || state === "y"){
   state = "y";
-});
-
-const velocity = floatingBox.userData.physicsBody.velocity;
-tableBody.addEventListener('collide', function(event) {
-  if (landedBoxes.length >= 1 && event.body === floatingBox.userData.physicsBody && Math.abs(velocity.x) < 0.1 && Math.abs(velocity.y) < 0.1 && Math.abs(velocity.z) < 0.1) {
-    state = "z";
   }
 });
 
@@ -235,7 +246,8 @@ scene.background = bgTexture;
   </script>
 </head>
 <body>
-  <div id ="score"></div>
+  <div id="score"></div>
   <canvas id="myCanvas"></canvas>
+  <button id="retryButton"></button>
 </body>
 </html>
