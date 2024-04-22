@@ -68,7 +68,7 @@ const textures = [
 
 let floatingBox = null;
 
-let moveDirection2 = 15;
+let moveDirection2 = 14;
 let score = 0;
 
 function moveboxX() {
@@ -77,7 +77,6 @@ function moveboxX() {
     moveDirection2 = -moveDirection2;
   }
 }
-
 
 function createBox() {
 
@@ -94,7 +93,7 @@ function createBox() {
 
   const boxMaterial = new CANNON.Material('boxMaterial');
   boxMaterial.restitution = 0.2;
-  boxMaterial.friction = 0.6;
+  boxMaterial.friction = 2;
   const boxShape = new CANNON.Box(new CANNON.Vec3(100, 15, 125));
   let boxMass = 300;
   const boxBody = new CANNON.Body({ mass: boxMass, material: boxMaterial });
@@ -106,6 +105,7 @@ function createBox() {
 }
 
 const landedBoxes = [];
+
 let state = "x";
 
 const tableTexture = "image/66193d1aeb0e1a1ab36b2687c79e63f7_t.jpeg";
@@ -124,6 +124,8 @@ const tableBody = new CANNON.Body({ mass: tableMass, material: tableCannonMateri
 tableBody.addShape(tableShape);
 tableBody.position.set(50, -540, 0);
 world.addBody(tableBody);
+table.userData.physicsBody = tableBody;
+
 
 const gameoverTexture = new THREE.TextureLoader().load("image/gameover.png");
 const gameoverMaterial = new THREE.MeshBasicMaterial({ map: gameoverTexture });
@@ -144,22 +146,35 @@ const home = new THREE.Mesh(homeGeometry, homeMaterial);
 home.position.set(180, -200, 0);
 
 let contactTime = 0;
-
+let connectTime =0;
+let startTime= null;
 retryButton.style.display = "none";
 
 function animate() {
   requestAnimationFrame(animate);
   world.step(1/60);
 
+  let i = Math.floor(landedBoxes.length/10);
+  let tabledirection = 1;
+  table.position.y  = tableBody.position.y;
+if(landedBoxes.length>=1 && Number.isInteger(landedBoxes.length/10)){
+  tableBody.position.y -= tabledirection;
+  if(table.position.y <= -540-150*i){
+  tabledirection = 0;
+}}
+
   tableBody.addEventListener('collide', function(event) {
-    if (landedBoxes.length >= 1 && event.body === floatingBox.userData.physicsBody) {
-      contactTime += 1/120;
+    if (landedBoxes.length >= 1 && (event.body === floatingBox.userData.physicsBody|| (landedBoxes.indexOf()>=1 && landedBoxes.some(box => box.userData.physicsBody === event.body)))) {
+      contactTime += 1/60;
     } else {
       contactTime = 0;
     }
   });
 
+ 
+
   if (contactTime >= 2) {
+
     state = "gameover";
     console.log("gameover");
     scene.add(gameover);
@@ -169,10 +184,7 @@ function animate() {
 
   }
 
-  if (floatingBox && floatingBox.userData.physicsBody) {
-    floatingBox.position.copy(floatingBox.userData.physicsBody.position);
-    floatingBox.quaternion.copy(floatingBox.userData.physicsBody.quaternion);
-  }
+ 
 
   if (state === "x") {
     floatingBox.userData.physicsBody.mass = 0; 
@@ -181,8 +193,9 @@ function animate() {
 
     floatingBox.userData.physicsBody.mass = 300; 
     const velocity = floatingBox.userData.physicsBody.velocity;
-    if (Math.abs(velocity.x) < 0.1 && Math.abs(velocity.y) < 0.1 && Math.abs(velocity.z) < 0.1) {
+    if ((Math.abs(velocity.x) < 0.1 && Math.abs(velocity.y) < 0.1 && Math.abs(velocity.z) < 0.1)||Date.now() - startTime >=2000) {
       landedBoxes.push(floatingBox);
+      
       createBox();
       state = "x";
       score += 10;
@@ -194,9 +207,20 @@ function animate() {
       }
     }
   } 
+
+  landedBoxes.forEach(box => {
+    box.position.copy(box.userData.physicsBody.position);
+    box.quaternion.copy(box.userData.physicsBody.quaternion);
+  });
+
+  if (floatingBox && floatingBox.userData.physicsBody) {
+    floatingBox.position.copy(floatingBox.userData.physicsBody.position);
+    floatingBox.quaternion.copy(floatingBox.userData.physicsBody.quaternion);
+  }
   applyGravityToLandedBoxes();
   renderer.render(scene, camera);
 }
+
 
 function applyGravityToLandedBoxes() {
   landedBoxes.forEach(box => {
@@ -233,8 +257,12 @@ retryButton.addEventListener("click", () => {
 });
 
 document.addEventListener("click", () => {
-if(state === "x" || state === "y"){
+if(state === "x"){
   state = "y";
+  startTime = Date.now();
+  }
+  if(state === "y"){
+    state="y";
   }
 });
 
